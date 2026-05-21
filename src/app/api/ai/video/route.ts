@@ -4,17 +4,37 @@ import { createProvider } from "@/lib/providers";
 // AI 生视频
 export async function POST(req: NextRequest) {
   const body = await req.json();
-  const { provider: providerName, model, prompt, imageUrl, mode, apiKey, baseUrl, options } = body;
+  const {
+    provider: providerName,
+    model,
+    prompt,
+    imageUrl,
+    mode,
+    apiKey,
+    baseUrl,
+    authType,
+    imageModel,
+    videoModel,
+    providerOptions,
+    options,
+  } = body;
 
-  if (!providerName || !model) {
+  const selectedModel = model || videoModel;
+
+  if (!providerName || !selectedModel) {
     return NextResponse.json({ error: "缺少必要参数" }, { status: 400 });
   }
 
   try {
-    const provider = createProvider({ name: providerName, apiKey, baseUrl });
+    const provider = createProvider({
+      name: providerName,
+      apiKey,
+      baseUrl,
+      extra: { authType, imageModel, videoModel, ...providerOptions },
+    });
 
     const result = await provider.generateVideo({
-      modelId: model,
+      modelId: selectedModel,
       mode: mode || (imageUrl ? "image-to-video" : "text-to-video"),
       prompt: prompt || "",
       firstFrameUrl: imageUrl,
