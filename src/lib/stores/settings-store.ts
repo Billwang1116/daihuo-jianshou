@@ -6,6 +6,9 @@ export interface ProviderSetting {
   enabled: boolean;
   apiKey: string;
   baseUrl?: string;
+  imageModel?: string;
+  videoModel?: string;
+  authType?: "key" | "bearer" | "x-api-key" | "none";
 }
 
 // LLM 配置
@@ -44,6 +47,14 @@ export const useSettingsStore = create<SettingsState>()(
   persist(
     (set) => ({
       providers: {
+        custom: {
+          enabled: false,
+          apiKey: "",
+          baseUrl: "https://yunwu.ai",
+          videoModel: "fal-ai/veo3",
+          imageModel: "",
+          authType: "key",
+        },
         "atlas-cloud": { enabled: false, apiKey: "" },
         "fal-ai": { enabled: false, apiKey: "" },
         volcengine: { enabled: false, apiKey: "" },
