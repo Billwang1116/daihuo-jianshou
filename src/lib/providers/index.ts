@@ -6,6 +6,8 @@
 import type { AIProvider, ProviderConfig, ProviderRegistration } from './types'
 import { AtlasCloudProvider } from './atlas-cloud'
 import { FalAIProvider } from './fal-ai'
+import { CustomProvider } from './custom'
+import { YunwuProvider } from './yunwu'
 import { VolcEngineProvider } from './volcengine'
 import { AlibabaProvider } from './alibaba'
 import { SiliconFlowProvider } from './siliconflow'
@@ -36,6 +38,20 @@ registerProvider({
   displayName: 'fal.ai',
   description: 'fal.ai 推理平台，支持 FLUX、Kling、Wan 等多种模型',
   factory: (config) => new FalAIProvider(config),
+})
+
+registerProvider({
+  name: 'custom',
+  displayName: '自定义接口',
+  description: '自定义 fal 队列兼容接口，可填写云雾或其他中转平台的 Base URL 和模型路径',
+  factory: (config) => new CustomProvider(config),
+})
+
+registerProvider({
+  name: 'yunwu',
+  displayName: '云雾',
+  description: '云雾 API 中转入口，默认按 fal 兼容方式接入，可自定义 Base URL 和模型路径',
+  factory: (config) => new YunwuProvider(config),
 })
 
 registerProvider({
@@ -139,6 +155,8 @@ export type {
 export { BaseProvider, ProviderError } from './base'
 export { AtlasCloudProvider } from './atlas-cloud'
 export { FalAIProvider } from './fal-ai'
+export { CustomProvider } from './custom'
+export { YunwuProvider } from './yunwu'
 export { VolcEngineProvider } from './volcengine'
 export { AlibabaProvider } from './alibaba'
 export { SiliconFlowProvider } from './siliconflow'
