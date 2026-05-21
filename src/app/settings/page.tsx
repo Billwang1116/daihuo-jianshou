@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, type ReactNode } from "react";
 import Link from "next/link";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -16,13 +16,73 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
-import { LuPlus, LuTrash2, LuUser, LuStar, LuUpload, LuPalette } from "react-icons/lu";
-import { useSettingsStore } from "@/lib/stores/settings-store";
+import { LuPlus, LuTrash2, LuUser, LuStar, LuUpload, LuPalette, LuPlug } from "react-icons/lu";
+import { useSettingsStore, type ProviderSetting } from "@/lib/stores/settings-store";
 import { useCharacterStore, type Character } from "@/lib/stores/project-store";
 import { useBrandStore } from "@/lib/stores/brand-store";
 
+type ProviderAuthType = NonNullable<ProviderSetting["authType"]>;
+
+interface ProviderPreset {
+  label: string;
+  baseUrl: string;
+  videoModel: string;
+  imageModel?: string;
+  authType: ProviderAuthType;
+}
+
+interface AIProviderCard {
+  key: string;
+  name: string;
+  description: string;
+  tip: string;
+  icon: ReactNode;
+  iconBg: string;
+  baseUrlPlaceholder?: string;
+  imageModelPlaceholder?: string;
+  videoModelPlaceholder?: string;
+  defaultBaseUrl?: string;
+  defaultImageModel?: string;
+  defaultVideoModel?: string;
+  defaultAuthType?: ProviderAuthType;
+  showAdvanced?: boolean;
+  presets?: ProviderPreset[];
+}
+
+const AUTH_TYPE_OPTIONS: Array<{ value: ProviderAuthType; label: string }> = [
+  { value: "key", label: "Authorization: Key" },
+  { value: "bearer", label: "Authorization: Bearer" },
+  { value: "x-api-key", label: "x-api-key" },
+  { value: "none", label: "不发送鉴权头" },
+];
+
 // AI 平台配置信息
-const AI_PROVIDERS = [
+const AI_PROVIDERS: AIProviderCard[] = [
+  {
+    key: "custom",
+    name: "自定义接口 / 云雾",
+    description: "开放的视频 API 入口，兼容 fal 队列格式，可填写云雾或其他中转平台",
+    tip: "云雾示例：Base URL 填 https://yunwu.ai，视频模型填 fal-ai/veo3",
+    icon: <LuPlug className="h-5 w-5" />,
+    iconBg: "from-slate-700 to-cyan-500",
+    showAdvanced: true,
+    defaultBaseUrl: "https://yunwu.ai",
+    defaultVideoModel: "fal-ai/veo3",
+    defaultImageModel: "",
+    defaultAuthType: "key",
+    baseUrlPlaceholder: "https://yunwu.ai",
+    videoModelPlaceholder: "fal-ai/veo3",
+    imageModelPlaceholder: "fal-ai/flux/dev",
+    presets: [
+      {
+        label: "云雾 Veo3",
+        baseUrl: "https://yunwu.ai",
+        videoModel: "fal-ai/veo3",
+        imageModel: "",
+        authType: "key",
+      },
+    ],
+  },
   {
     key: "atlas-cloud",
     name: "Atlas Cloud",
@@ -289,9 +349,14 @@ export default function SettingsPage() {
           <TabsContent value={0}>
             <div className="space-y-4">
               {AI_PROVIDERS.map((platform) => {
-                const provider = providers[platform.key] ?? {
+                const provider: ProviderSetting = {
                   enabled: false,
                   apiKey: "",
+                  baseUrl: platform.defaultBaseUrl,
+                  imageModel: platform.defaultImageModel,
+                  videoModel: platform.defaultVideoModel,
+                  authType: platform.defaultAuthType,
+                  ...(providers[platform.key] ?? {}),
                 };
 
                 return (
@@ -351,6 +416,112 @@ export default function SettingsPage() {
                           placeholder={`输入 ${platform.name} 的 API Key`}
                         />
                       </div>
+
+                      {platform.showAdvanced && (
+                        <div className="mt-4 grid gap-4 border-t border-border/50 pt-4">
+                          {platform.presets && platform.presets.length > 0 && (
+                            <div className="flex flex-wrap gap-2">
+                              {platform.presets.map((preset) => (
+                                <button
+                                  key={preset.label}
+                                  type="button"
+                                  onClick={() =>
+                                    setProvider(platform.key, {
+                                      ...provider,
+                                      baseUrl: preset.baseUrl,
+                                      videoModel: preset.videoModel,
+                                      imageModel: preset.imageModel ?? "",
+                                      authType: preset.authType,
+                                    })
+                                  }
+                                  className="inline-flex items-center rounded-md border border-border/50 bg-background px-2.5 py-1 text-xs text-muted-foreground transition-colors hover:border-primary/40 hover:text-primary"
+                                >
+                                  {preset.label}
+                                </button>
+                              ))}
+                            </div>
+                          )}
+
+                          <div className="grid gap-4 sm:grid-cols-2">
+                            <div className="space-y-1.5">
+                              <Label className="text-xs text-muted-foreground">
+                                Base URL
+                              </Label>
+                              <Input
+                                value={provider.baseUrl ?? ""}
+                                onChange={(e) =>
+                                  setProvider(platform.key, {
+                                    ...provider,
+                                    baseUrl: e.target.value,
+                                  })
+                                }
+                                placeholder={platform.baseUrlPlaceholder}
+                                className="font-mono text-xs"
+                              />
+                            </div>
+                            <div className="space-y-1.5">
+                              <Label className="text-xs text-muted-foreground">
+                                鉴权方式
+                              </Label>
+                              <Select
+                                value={provider.authType ?? platform.defaultAuthType ?? "key"}
+                                onValueChange={(authType) =>
+                                  setProvider(platform.key, {
+                                    ...provider,
+                                    authType: authType as ProviderAuthType,
+                                  })
+                                }
+                              >
+                                <SelectTrigger className="w-full">
+                                  <SelectValue />
+                                </SelectTrigger>
+                                <SelectContent>
+                                  {AUTH_TYPE_OPTIONS.map((option) => (
+                                    <SelectItem key={option.value} value={option.value}>
+                                      {option.label}
+                                    </SelectItem>
+                                  ))}
+                                </SelectContent>
+                              </Select>
+                            </div>
+                          </div>
+
+                          <div className="grid gap-4 sm:grid-cols-2">
+                            <div className="space-y-1.5">
+                              <Label className="text-xs text-muted-foreground">
+                                视频模型 / 路径
+                              </Label>
+                              <Input
+                                value={provider.videoModel ?? ""}
+                                onChange={(e) =>
+                                  setProvider(platform.key, {
+                                    ...provider,
+                                    videoModel: e.target.value,
+                                  })
+                                }
+                                placeholder={platform.videoModelPlaceholder}
+                                className="font-mono text-xs"
+                              />
+                            </div>
+                            <div className="space-y-1.5">
+                              <Label className="text-xs text-muted-foreground">
+                                图片模型 / 路径（可选）
+                              </Label>
+                              <Input
+                                value={provider.imageModel ?? ""}
+                                onChange={(e) =>
+                                  setProvider(platform.key, {
+                                    ...provider,
+                                    imageModel: e.target.value,
+                                  })
+                                }
+                                placeholder={platform.imageModelPlaceholder}
+                                className="font-mono text-xs"
+                              />
+                            </div>
+                          </div>
+                        </div>
+                      )}
                     </CardContent>
                   </Card>
                 );
