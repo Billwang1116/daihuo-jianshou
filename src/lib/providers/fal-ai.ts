@@ -91,7 +91,8 @@ export class FalAIProvider extends BaseProvider {
     )
 
     // 轮询等待结果
-    const finalStatus = await this.pollTaskStatus(submitResponse.request_id, {
+    const taskId = `${options.modelId}::${submitResponse.request_id}`
+    const finalStatus = await this.pollTaskStatus(taskId, {
       interval: 2000,
     })
 
@@ -147,7 +148,8 @@ export class FalAIProvider extends BaseProvider {
     )
 
     // 轮询等待结果
-    const finalStatus = await this.pollTaskStatus(submitResponse.request_id, {
+    const taskId = `${options.modelId}::${submitResponse.request_id}`
+    const finalStatus = await this.pollTaskStatus(taskId, {
       interval: 5000,
     })
 
